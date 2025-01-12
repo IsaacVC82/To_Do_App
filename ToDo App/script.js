@@ -1,117 +1,92 @@
-const taskForm = document.getElementById("task-form");
-const confirmCloseDialog = document.getElementById("confirm-close-dialog");
-const openTaskFormBtn = document.getElementById("open-task-form-btn");
-const closeTaskFormBtn = document.getElementById("close-task-form-btn");
-const addOrUpdateTaskBtn = document.getElementById("add-or-update-task-btn");
-const cancelBtn = document.getElementById("cancel-btn");
-const discardBtn = document.getElementById("discard-btn");
-const tasksContainer = document.getElementById("tasks-container");
-const titleInput = document.getElementById("title-input");
-const dateInput = document.getElementById("date-input");
-const descriptionInput = document.getElementById("description-input");
-
-const taskData =JSON.parse(localStorage.getItem("data")) || [];
-let currentTask = {};
-
-const addOrUpdateTask = () => {
-    addOrUpdateTaskBtn.innerText = "Add Task";
-    const dataArrIndex = taskData.findIndex((item) => item.id === currentTask.id);
-    const taskObj = {
-        id: `${titleInput.value.toLowerCase().split(" ").join("-")}-${Date.now()}`,
+document.addEventListener('DOMContentLoaded', () => {
+    const taskForm = document.getElementById("task-form");
+    const tasksContainer = document.getElementById("tasks-container");
+    const openTaskFormBtn = document.getElementById("open-task-form-btn");
+    const closeTaskFormBtn = document.getElementById("close-task-form-btn");
+    const addTaskBtn = document.getElementById("add-task-btn");
+  
+    const titleInput = document.getElementById("title-input");
+    const dateInput = document.getElementById("date-input");
+    const descriptionInput = document.getElementById("description-input");
+    const priorityInput = document.getElementById("priority-input");
+    const completedInput = document.getElementById("completed-input");
+  
+    // Cargar tareas desde el almacenamiento local
+    let taskData = JSON.parse(localStorage.getItem("tasks")) || [];
+  
+    // Función para renderizar las tareas
+    const renderTasks = () => {
+      tasksContainer.innerHTML = ''; // Limpiar tareas
+  
+      taskData.forEach(task => {
+        const taskDiv = document.createElement("div");
+        taskDiv.classList.add("task");
+        if (task.completed) {
+          taskDiv.classList.add("completed");
+        }
+        taskDiv.innerHTML = `
+          <h3>${task.title}</h3>
+          <p><strong>Date:</strong> ${task.date}</p>
+          <p><strong>Description:</strong> ${task.description}</p>
+          <p><strong>Priority:</strong> ${task.priority}</p>
+          <button onclick="toggleCompletion('${task.id}')">Edit Completion</button>
+          <button onclick="deleteTask('${task.id}')">Delete</button>
+        `;
+        tasksContainer.appendChild(taskDiv);
+      });
+    };
+  
+    // Función para agregar una nueva tarea
+    addTaskBtn.addEventListener("click", () => {
+      const task = {
+        id: Date.now().toString(),
         title: titleInput.value,
         date: dateInput.value,
         description: descriptionInput.value,
+        priority: priorityInput.value,
+        completed: completedInput.checked,
+      };
+  
+      taskData.push(task);
+      localStorage.setItem("tasks", JSON.stringify(taskData));
+  
+      renderTasks();
+      resetForm();
+    });
+  
+    // Función para eliminar una tarea
+    window.deleteTask = (id) => {
+      taskData = taskData.filter(task => task.id !== id);
+      localStorage.setItem("tasks", JSON.stringify(taskData));
+      renderTasks();
     };
-
-    if (dataArrIndex === -1) {
-        taskData.unshift(taskObj);
-    }else{
-        taskData[dataArrIndex] = taskObj;
-    }
-    //esto guardará los datos en el localStorage
-    localStorage.setItem("data", JSON.stringify(taskData));
-
-
-    updateTaskContainer();
-    reset();
-}
-const updateTaskContainer = () => {
-    tasksContainer.innerHTML = "";
-    //esto mostrará el div con la información
-    taskData.forEach(
-        ({ id, title, date, description }) => {
-            (tasksContainer.innerHTML += `
-            <div class="task" id="${id}">
-              <p><strong>Title:</strong> ${title}</p>
-              <p><strong>Date:</strong> ${date}</p>
-              <p><strong>Description:</strong> ${description}</p>
-              <button onclick="editTask(this)" type="button" class="btn">Edit</button>
-              <button onclick="deleteTask(this)" type="button" class="btn">Delete</button>
-            </div>
-          `)
-        }
-    );
-}
-const deleteTask = (buttonEl) => {
-    const dataArrIndex = taskData.findIndex((item) => item.id === buttonEl.parentElement.id
-    );
-    buttonEl.parentElement.remove();
-    taskData.splice(dataArrIndex, 1);
-    localStorage.setItem("data", JSON.stringify(taskData));
-}
-const editTask = (buttonEl) => {
-    const dataArrIndex = taskData.findIndex((item) => item.id === buttonEl.parentElement.id);
-
-    currentTask = taskData[dataArrIndex];
-
-    titleInput.value = currentTask.title;
-    dateInput.value = currentTask.date;
-    descriptionInput.value = currentTask.description;
-
-    addOrUpdateTaskBtn.innerText = "Update Task";
-
-    formModal(taskForm.classList.toggle("hidden"));
-
-
-}
-
-
-const reset = () => {
-    titleInput.value = "",
-        dateInput.value = "",
-        descriptionInput.value = "",
-        taskForm.classList.toggle("hidden");
-    currentTask = {}
-
-}
-if(taskData.length){
-    updateTaskContainer()
-  }
-
-openTaskFormBtn.addEventListener("click", () =>
-    taskForm.classList.toggle("hidden")
-);
-
-closeTaskFormBtn.addEventListener("click", () => {
-    const formInputsContainValues = titleInput.value || dateInput.value || descriptionInput.value;
-    const formInputValuesUpdated = titleInput.value !== currentTask.title || dateInput.value !== currentTask.date || descriptionInput.value !== currentTask.description; 
-
-    if (formInputsContainValues && formInputValuesUpdated) {
-        confirmCloseDialog.showModal();
-    } else {
-        reset();
-    }
-
-});
-
-cancelBtn.addEventListener("click", () => confirmCloseDialog.close());
-
-discardBtn.addEventListener("click", () => {
-    confirmCloseDialog.close();
-    reset();
-});
-
-taskForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    addOrUpdateTask();
-});
+  
+    // Función para alternar la marca de tarea completada
+    window.toggleCompletion = (id) => {
+      const task = taskData.find(task => task.id === id);
+      task.completed = !task.completed;
+      localStorage.setItem("tasks", JSON.stringify(taskData));
+      renderTasks();
+    };
+  
+    // Función para resetear el formulario
+    const resetForm = () => {
+      titleInput.value = '';
+      dateInput.value = '';
+      descriptionInput.value = '';
+      priorityInput.value = 'Low';
+      completedInput.checked = false;
+      taskForm.style.display = 'none';
+    };
+  
+    // Mostrar el formulario
+    openTaskFormBtn.addEventListener("click", () => {
+      taskForm.style.display = 'block';
+    });
+  
+    // Cerrar el formulario
+    closeTaskFormBtn.addEventListener("click", resetForm);
+  
+    renderTasks(); // Inicializar la vista con las tareas guardadas
+  });
+  
